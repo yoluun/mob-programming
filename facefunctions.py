@@ -1,7 +1,6 @@
 #fbapi
 from fbkey import *
-import http.client, urllib.request, urllib.parse, urllib.error, base64, requests, json, sys
-
+import http.client, urllib.request, urllib.parse, urllib.error, base64, requests, json, sys, ast
 
 def detectFaces(img_url):
 	# Request headers.
@@ -37,7 +36,25 @@ def createPersonGroup(personGroupId, name, userData=None):
 	return 0
 
 def createPerson(personGroupId, name, userData=None):
-	return 0
+	params = urllib.parse.urlencode({'personGroupId': personGroupId})
+	body = "{'name': 'George Sung', 'userData': 'hello world'}"
+	if userData is None:
+		body = "{'name': '%s'}" % (name,)
+	else:
+		body = "{'name': '%s', 'userData': '%s'}" % (name, userData)
+
+	try:
+		conn = http.client.HTTPSConnection('westus.api.cognitive.microsoft.com')
+		conn.request("POST", "/face/v1.0/persongroups/{personGroupId}/persons?%s" % params, body, headers)
+		response = conn.getresponse()
+		data = str(response.read())[2:-1]
+		conn.close()
+	except Exception as e:
+		print("[Errno {0}] {1}".format(e.errno, e.strerror))
+		return None
+
+	data = ast.literal_eval(data)
+	return data['personId']
 
 def applyFace(personGroupId, personId, image):
 	return 0
