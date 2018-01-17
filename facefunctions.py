@@ -1,7 +1,10 @@
 #fbapi
 from fbkey import *
+import http.client, urllib.request, urllib.parse, urllib.error, base64, requests, json, sys
+
 
 def detectFaces(img):
+
 
 	return 0
 
