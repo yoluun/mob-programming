@@ -2,7 +2,7 @@
 from fbkey import *
 import http.client, urllib.request, urllib.parse, urllib.error, base64, requests, json, sys, ast
 
-def detectFaces(img_url):
+def detectFaces(imageUrl):
 	# Request headers.
 	headers = {
 		'Content-Type': 'application/json',
@@ -17,7 +17,7 @@ def detectFaces(img_url):
 	}
 
 	# Body. The URL of a JPEG image to analyze.
-	body = {'url': img_url}
+	body = {'url': imageUrl}
 
 	try:
 		# Execute the REST API call and get the response.
@@ -58,7 +58,7 @@ def createPersonGroup(personGroupId, name, userData=None):
 	    conn.close()
 	except Exception as e:
 	    return(e.args)
-    
+
 def createPerson(personGroupId, name, userData=None):
 	params = urllib.parse.urlencode({'personGroupId': personGroupId})
 	body = "{'name': 'George Sung', 'userData': 'hello world'}"
@@ -80,8 +80,46 @@ def createPerson(personGroupId, name, userData=None):
 	data = ast.literal_eval(data)
 	return data['personId']
 
-def applyFace(personGroupId, personId, image):
-	return 0
+def applyFace(personGroupId, personId, imageUrl):
+	#PUT FACE ONTO PERSON
+	params = urllib.parse.urlencode({'personGroupId':personGroupId, 'personId':personId})
 
-def verifyFace(image, personGroupId=None, personId=None):
-	return 0
+	body = '{"url":"%s"}' % imageUrl
+	try:
+		conn = http.client.HTTPSConnection(uri_base.strip('https://'))
+		conn.request("POST", "/face/v1.0/persongroups/{personGroupId}/persons/{personId}/persistedFaces?%s" % params, body, headers)
+		response = conn.getresponse()
+		data = response.read()
+		conn.close()
+	except Exception as e:
+		print("[Errno {0}] {1}".format(e.errno, e.strerror))
+		return None
+
+	return data
+
+def verifyFaceId(faceId, personGroupId=None, personId=None):
+	params = urllib.parse.urlencode({ })
+	body = "{'faceId':'%s', 'personGroupId':'%s', 'personId':'%s'}" % (faceId, personGroupId, personId)
+	try:
+		conn = http.client.HTTPSConnection(uri_base.strip('https://'))
+		conn.request("POST", "/face/v1.0/verify?%s" % params, body, headers)
+		response = conn.getresponse()
+		data = response.read()
+		conn.close()
+	except Exception as e:
+		print("[Errno {0}] {1}".format(e.errno, e.strerror))
+		return None
+
+	return data
+
+def verifyFaceImage(imageUrl, personGroupId=None, personId=None):
+	parsed = detectFaces(imageUrl)
+	if 'error' in parsed:
+		print('Error with detectFaces()')
+		print(parsed)
+		return None
+
+	faceId = parsed['faceId']
+	data = verifyFaceId(faceId, personGroupId, personId)
+
+	return data
